@@ -2,9 +2,13 @@ import shiftagoPython.evaluateBoard as me
 import copy
 
 class minimaxAlgo():
-    def __init__(self, evalfunc, ratio1, ratio2):
-        if evalfunc == 'lazy':
-            self.evalFunc = me.lazyEval(ratio1, ratio2) # Good ones include (1,5) and (1,9)
+    def __init__(self, mode, evalfunc, ratios):
+        if mode == 'simple':
+            if evalfunc == 'lazy':
+                self.evalFunc = me.SimpleLazyEval(ratios) # Good ones include (1,5) and (1,9)
+        elif mode == 'extreme':
+            if evalfunc == 'lazy':
+                self.evalFunc = me.ExtremeLazyEval(ratios) # Don't know yet
 
     def minimax(self, game, depth, alpha, beta, playerToMax):
         if depth == 0:
@@ -15,11 +19,10 @@ class minimaxAlgo():
             for i in range(28):
                 curGame = copy.deepcopy(game)
 
-                try:
-                    curGame.move(i)
-                except ValueError as e:
+                move = curGame.move(i)
+                if move == False:
                     continue
-                except Exception as e:
+                elif move == None:
                     bestMoveValue = 9999
                 else:
                     bestMoveValue = max(bestMoveValue, self.minimax(curGame, depth-1, alpha, beta, not playerToMax))
@@ -34,11 +37,10 @@ class minimaxAlgo():
             for i in range(28):
                 curGame = copy.deepcopy(game)
 
-                try:
-                    curGame.move(i)
-                except ValueError as e:
+                move = curGame.move(i)
+                if move == False:
                     continue
-                except Exception as e:
+                elif move == None:
                     bestMoveValue = -9999
                 else:
                     bestMoveValue = min(bestMoveValue, self.minimax(curGame, depth-1, alpha, beta, not playerToMax))
@@ -57,11 +59,10 @@ class minimaxAlgo():
         for i in range(28):
             curGame = copy.deepcopy(game)
 
-            try:
-                curGame.move(i)
-            except ValueError as e:
+            move = curGame.move(i)
+            if move == False:
                 continue
-            except Exception as e:
+            elif move == None:
                 return i
             else:
                 value = self.minimax(curGame, depth-1, -10000, 10000, not playerToMax)
