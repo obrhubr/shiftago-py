@@ -1,197 +1,93 @@
 import copy
+import numpy as np
 
 class Minimax():
-    def __init__(self, ratios, depth = 3):
-        self.evalFunc = SimpleLazyEval(ratios) # Good ones include (1,5) and (1,9)
-        self.depth = depth
-        return
+	def __init__(self, depth = 3):
+		self.depth = depth
+		self.max = 9999
+		self.winning_length = 4
+		return
 
-    def minimax(self, game, depth, alpha, beta, playerToMax):
-        if depth == 0:
-            return -1 * self.evalFunc.evaluateBoard(game.board)
-        
-        if playerToMax == True:
-            bestMoveValue = -9999
-            for i in range(28):
-                curGame = copy.deepcopy(game)
+	def minimax(self, game, depth):
+		if depth == 0 or game.game_end:
+			return self.evaluate(game), 0
+		
+		best_move = 0
+		best_move_value = -self.max
 
-                move = curGame.move(i)
-                if move == False:
-                    continue
-                elif move == None:
-                    bestMoveValue = 9999
-                else:
-                    bestMoveValue = max(bestMoveValue, self.minimax(curGame, depth-1, alpha, beta, not playerToMax))
+		for move in range(28):
+			new_game = copy.deepcopy(game)
 
-                del curGame
-                alpha = max(alpha, bestMoveValue)
-                if beta <= alpha:
-                    return bestMoveValue
-            return bestMoveValue
-        else:
-            bestMoveValue = 9999
-            for i in range(28):
-                curGame = copy.deepcopy(game)
+			# If the move was illegal, skip it
+			if new_game.move(move) == False:
+				continue
 
-                move = curGame.move(i)
-                if move == False:
-                    continue
-                elif move == None:
-                    bestMoveValue = -9999
-                else:
-                    bestMoveValue = min(bestMoveValue, self.minimax(curGame, depth-1, alpha, beta, not playerToMax))
+			move_value, _ = self.minimax(new_game, depth - 1)
+			move_value *= -1 # Negamax
 
-                del curGame
-                alpha = min(alpha, bestMoveValue)
-                if beta <= alpha:
-                    return bestMoveValue
-                    
-            return bestMoveValue
+			# Free memory
+			del new_game
 
-    def minimaxRoot(self, game, depth, playerToMax):
-        bestMoveValue = -9999
-        bestMoveIndex = None
+			# Update best move
+			if move_value > best_move_value:
+				best_move_value = move_value
+				best_move = move
+		
+		return best_move_value, best_move
 
-        for i in range(28):
-            curGame = copy.deepcopy(game)
+	# Return evaluation, > 0 if player 1 is winning, otherwise < 0
+	def evaluate(self, game):
+		def count_consecutive_row(arr):
+			changes = np.diff(arr.astype(int), prepend=0, append=0)
+			counts = np.where(changes == -1)[0] - np.where(changes == 1)[0]
+			return list(counts) if len(counts) > 0 else [0]
+		
+		# Count consecutive balls on board in straight lines
+		def count_consecutive(arr):
+			counts = [count_consecutive_row(row_or_col) for row_or_col in arr]
+			return [x for xs in counts for x in xs]
+		
+		def score_consecutive(consecutive_balls):
+			if consecutive_balls > 4:
+				raise Exception("More than 4 balls in a row.")
+			
+			scores = {0: 0, 1: 0, 2: 1, 3: 5, 4: 9999} # 3 is worth a lot more than 2
+			return scores[consecutive_balls]
+		
+		def get_diagonals(array):
+			diagonals = []
+			rows, cols = array.shape
 
-            move = curGame.move(i)
-            if move == False:
-                continue
-            elif move == None:
-                return i
-            else:
-                value = self.minimax(curGame, depth-1, -10000, 10000, not playerToMax)
+			# Get diagonals from the top-left to the bottom-right
+			for k in range(-rows + 4, cols - (4 - 1)):
+				diagonals.append(np.diagonal(array, offset=k))
 
-            del curGame
-            if value >= bestMoveValue:
-                bestMoveValue = value
-                bestMoveIndex = i
+			return diagonals
+		
+		# early exit on game end
+		if game.game_end:
+			return self.max * (1 if game.winner == 1 else -1) * (1 if game.turn == 1 else -1)
 
-        return bestMoveIndex
+		players = [1, 2]
+		player_scores = {player: 0 for player in players}
 
-    def move(self, game):
-        bestMove = self.minimaxRoot(game, self.depth, True)
-        return bestMove
-    
-class SimpleLazyEval():
-    def __init__(self, ratios):
-        self.ratio1 = ratios[0]
-        self.ratio2 = ratios[1]
-    
-    def evaluateStraight(self, board):
-        value = 0
+		for player in players:
+			rows = count_consecutive(np.moveaxis(game.board, 0, 0) == player)
+			cols = count_consecutive(np.moveaxis(game.board, 1, 0) == player)
 
-        adjacent1 = 0
-        adjacent2 = 0
-        adjacent11 = 0
-        adjacent22 = 0
+			diag_r = count_consecutive([d == player for d in get_diagonals(game.board)])
+			diag_l = count_consecutive([d == player for d in get_diagonals(np.fliplr(game.board))])
 
-        #Check Columns
-        for i in range(7):
-            for j in range(7):
-                if board[i,j] == 1:
-                    adjacent1 += 1
-                    adjacent2 = 0
-                if board[i,j] == 2:
-                    adjacent2 += 1
-                    adjacent1 = 0
-                if board[i,j] == 0:
-                    adjacent1 = 0
-                    adjacent2 = 0
-                if adjacent1 == 2:
-                    value += self.ratio1
-                if adjacent2 == 2:
-                    value += -1 * self.ratio1
-                if adjacent1 == 3:
-                    value += self.ratio2
-                if adjacent2 == 3:
-                    value += -1 * self.ratio2
+			player_scores[player] += (
+				sum(map(score_consecutive, rows)) +
+				sum(map(score_consecutive, cols)) +
+				sum(map(score_consecutive, diag_r)) +
+				sum(map(score_consecutive, diag_l))
+			)
 
-                #Check rows
-                if board[j,i] == 1:
-                    adjacent11 += 1
-                    adjacent22 = 0
-                if board[j,i] == 2:
-                    adjacent22 += 1
-                    adjacent11 = 0
-                if board[j,i] == 0:
-                    adjacent11 = 0
-                    adjacent22 = 0
-                if adjacent11 == 2:
-                    value += self.ratio1
-                if adjacent22 == 2:
-                    value += -1 * self.ratio1
-                if adjacent11 == 3:
-                    value += self.ratio2
-                if adjacent22 == 3:
-                    value += -1 * self.ratio2
+		return (player_scores[1] - player_scores[2]) * (1 if game.turn == 1 else -1)
 
-
-            adjacent11 = 0
-            adjacent22 = 0
-            adjacent1 = 0
-            adjacent2 = 0
-
-        return value
-
-    def evaluateDiagonals(self, board):
-        value = 0
-
-        adjacent1 = 0
-        adjacent2 = 0
-        adjacent11 = 0
-        adjacent22 = 0
-        
-        for i in range(4):
-            for j in range(7-i):
-                if board[i+j, j] == 1:
-                    adjacent1 += 1
-                    adjacent2 = 0
-                if board[i+j, j] == 2:
-                    adjacent2 += 1
-                    adjacent1 = 0
-                if board[i+j, j] == 0:
-                    adjacent1 = 0
-                    adjacent2 = 0
-                if adjacent1 == 2:
-                    value += self.ratio1
-                if adjacent2 == 2:
-                    value += -1 * self.ratio1
-                if adjacent1 == 3:
-                    value += self.ratio2
-                if adjacent2 == 3:
-                    value += -1 * self.ratio2
-
-                if board[j, j+i] == 1:
-                    adjacent11 += 1
-                    adjacent22 = 0
-                if board[j, j+i] == 2:
-                    adjacent22 += 1
-                    adjacent11 = 0
-                if board[j, j+i] == 0:
-                    adjacent11 = 0
-                    adjacent22 = 0
-                if adjacent11 == 2:
-                    value += self.ratio1
-                if adjacent22 == 2:
-                    value += -1 * self.ratio1
-                if adjacent11 == 3:
-                    value += self.ratio2
-                if adjacent22 == 3:
-                    value += -1 * self.ratio2
-
-            adjacent11 = 0
-            adjacent22 = 0
-            adjacent1 = 0
-            adjacent2 = 0
-
-        return value
-
-    def evaluateBoard(self, board):
-        value = 0
-        
-        value += self.evaluateStraight(board)
-        value += self.evaluateDiagonals(board)
-
-        return value
+	def move(self, game):
+		_, move = self.minimax(game, self.depth)
+		print(f"Minimax choosing move {move}.")
+		return move

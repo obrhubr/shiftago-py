@@ -1,55 +1,57 @@
 import numpy as np
 
-from shiftagopy.util import *
-
 class Shiftago():
     def __init__(self):
-        self.board = np.zeros((7,7), int)
-        self.turn = True
-        self.gameEnd = False
+        self.board = np.zeros((7,7))
+        self.game_end = False
+        self.turn = 1
         self.winner = 0
 
     def move(self, num):
-        if self.gameEnd == True:
-            return None
-        if num >= 28:
+        if self.game_end == True:
+            return
+        
+        # Invalid move
+        if num < 0 and num > 27:
             return False
-        else:
-            if num//7 == 0:
-                if self.checkCol(num%7) == False:
-                    return False
-                else:
-                    self.shiftColRight(num%7)
-                    self.board[0,num%7] = 1 if self.turn == True else 2
-            elif num//7 == 1:
-                if self.checkRow(num%7) == False:
-                    return False
-                else:
-                    self.shiftRowLeft(6-num%7)
-                    self.board[num%7,6] = 1 if self.turn == True else 2
-            elif num//7 == 2:
-                if self.checkCol(6-num%7) == False:
-                    return False
-                else:
-                    self.shiftColLeft(num%7)
-                    self.board[6,6-num%7] = 1 if self.turn == True else 2
-            elif num//7 == 3:
-                if self.checkRow(6-num%7) == False:
-                    return False
-                else:
-                    self.shiftRowRight(6-num%7)
-                    self.board[6-num%7,0] = 1 if self.turn == True else 2
+        
+        if num//7 == 0:
+            if self.checkCol(num%7) == False:
+                return False
+            else:
+                self.shiftColRight(num%7)
+                self.board[0,num%7] = self.turn
+        elif num//7 == 1:
+            if self.checkRow(num%7) == False:
+                return False
+            else:
+                self.shiftRowLeft(6-num%7)
+                self.board[num%7,6] = self.turn
+        elif num//7 == 2:
+            if self.checkCol(6-num%7) == False:
+                return False
+            else:
+                self.shiftColLeft(num%7)
+                self.board[6,6-num%7] = self.turn
+        elif num//7 == 3:
+            if self.checkRow(6-num%7) == False:
+                return False
+            else:
+                self.shiftRowRight(6-num%7)
+                self.board[6-num%7,0] = self.turn
 
-            self.turn = not self.turn
+        # Switch turns
+        self.turn = 1 if self.turn == 2 else 2
 
-        res = self.checkEnd()
-        if res != 0:
-            self.winner = res
-            self.gameEnd = True
-            return None
+        # Check for end states
+        result = self.check_end()
+        if result != 0:
+            self.winner = result
+            self.game_end = True
+        
         return True
 
-    def checkEnd(self):
+    def check_end(self):
         adjacent1 = 0
         adjacent2 = 0
         adjacent11 = 0
@@ -97,18 +99,27 @@ class Shiftago():
         res = self.checkDiagonal()
         if res != 0:
             return res
+        
         #Check top-right to bottom-left diagonal
         self.rotate(1)
         res = self.checkDiagonal()
         self.rotate(3)
         if res != 0:
             return res
+        
         #Return 0 because no one won
         return 0
 
-    def printBoard(self):
-        printBoard(self.board)
-        return
+    def board_to_string(self):
+        def player_to_string(num):
+            if num == 1:
+                return "🟥"
+            elif num == 2:
+                return "🟦"
+            return "⬛"
+        
+        output = "\n".join(["".join(map(player_to_string, line)) for line in self.board])
+        return f"Player {player_to_string(self.turn)}'s turn: \n{output}\n"
 
     #Utility functions
     def checkCol(self, num):
