@@ -1,0 +1,1 @@
+from .shiftago import Shiftago

@@ -1,14 +1,10 @@
-import shiftagoPython.evaluateBoard as me
 import copy
 
-class minimaxAlgo():
-    def __init__(self, mode, evalfunc, ratios):
-        if mode == 'simple':
-            if evalfunc == 'lazy':
-                self.evalFunc = me.SimpleLazyEval(ratios) # Good ones include (1,5) and (1,9)
-        elif mode == 'extreme':
-            if evalfunc == 'lazy':
-                self.evalFunc = me.ExtremeLazyEval(ratios) # Don't know yet
+class Minimax():
+    def __init__(self, ratios, depth = 3):
+        self.evalFunc = SimpleLazyEval(ratios) # Good ones include (1,5) and (1,9)
+        self.depth = depth
+        return
 
     def minimax(self, game, depth, alpha, beta, playerToMax):
         if depth == 0:
@@ -74,6 +70,128 @@ class minimaxAlgo():
 
         return bestMoveIndex
 
-    def getBestMove(self, board, depth):
-        bestMove = self.minimaxRoot(board, depth, True)
+    def move(self, game):
+        bestMove = self.minimaxRoot(game, self.depth, True)
         return bestMove
+    
+class SimpleLazyEval():
+    def __init__(self, ratios):
+        self.ratio1 = ratios[0]
+        self.ratio2 = ratios[1]
+    
+    def evaluateStraight(self, board):
+        value = 0
+
+        adjacent1 = 0
+        adjacent2 = 0
+        adjacent11 = 0
+        adjacent22 = 0
+
+        #Check Columns
+        for i in range(7):
+            for j in range(7):
+                if board[i,j] == 1:
+                    adjacent1 += 1
+                    adjacent2 = 0
+                if board[i,j] == 2:
+                    adjacent2 += 1
+                    adjacent1 = 0
+                if board[i,j] == 0:
+                    adjacent1 = 0
+                    adjacent2 = 0
+                if adjacent1 == 2:
+                    value += self.ratio1
+                if adjacent2 == 2:
+                    value += -1 * self.ratio1
+                if adjacent1 == 3:
+                    value += self.ratio2
+                if adjacent2 == 3:
+                    value += -1 * self.ratio2
+
+                #Check rows
+                if board[j,i] == 1:
+                    adjacent11 += 1
+                    adjacent22 = 0
+                if board[j,i] == 2:
+                    adjacent22 += 1
+                    adjacent11 = 0
+                if board[j,i] == 0:
+                    adjacent11 = 0
+                    adjacent22 = 0
+                if adjacent11 == 2:
+                    value += self.ratio1
+                if adjacent22 == 2:
+                    value += -1 * self.ratio1
+                if adjacent11 == 3:
+                    value += self.ratio2
+                if adjacent22 == 3:
+                    value += -1 * self.ratio2
+
+
+            adjacent11 = 0
+            adjacent22 = 0
+            adjacent1 = 0
+            adjacent2 = 0
+
+        return value
+
+    def evaluateDiagonals(self, board):
+        value = 0
+
+        adjacent1 = 0
+        adjacent2 = 0
+        adjacent11 = 0
+        adjacent22 = 0
+        
+        for i in range(4):
+            for j in range(7-i):
+                if board[i+j, j] == 1:
+                    adjacent1 += 1
+                    adjacent2 = 0
+                if board[i+j, j] == 2:
+                    adjacent2 += 1
+                    adjacent1 = 0
+                if board[i+j, j] == 0:
+                    adjacent1 = 0
+                    adjacent2 = 0
+                if adjacent1 == 2:
+                    value += self.ratio1
+                if adjacent2 == 2:
+                    value += -1 * self.ratio1
+                if adjacent1 == 3:
+                    value += self.ratio2
+                if adjacent2 == 3:
+                    value += -1 * self.ratio2
+
+                if board[j, j+i] == 1:
+                    adjacent11 += 1
+                    adjacent22 = 0
+                if board[j, j+i] == 2:
+                    adjacent22 += 1
+                    adjacent11 = 0
+                if board[j, j+i] == 0:
+                    adjacent11 = 0
+                    adjacent22 = 0
+                if adjacent11 == 2:
+                    value += self.ratio1
+                if adjacent22 == 2:
+                    value += -1 * self.ratio1
+                if adjacent11 == 3:
+                    value += self.ratio2
+                if adjacent22 == 3:
+                    value += -1 * self.ratio2
+
+            adjacent11 = 0
+            adjacent22 = 0
+            adjacent1 = 0
+            adjacent2 = 0
+
+        return value
+
+    def evaluateBoard(self, board):
+        value = 0
+        
+        value += self.evaluateStraight(board)
+        value += self.evaluateDiagonals(board)
+
+        return value

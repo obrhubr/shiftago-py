@@ -8,15 +8,17 @@ This project provides a high level API for the game "Shiftago" written in Python
 
 The rules are availiable under [https://de.wikipedia.org/wiki/Shiftago](https://de.wikipedia.org/wiki/Shiftago). 
 
-TLDR: The game is played on a 7x7 board. The goal of the game is to align 4 pieces vertically, horizontally or diagonally. The players push in their pieces from the side, shifting the whole column or line in the process. There is also an "Extreme Mode". In this mode the goal is to get 10 points as fast as possible. If 4 pieces are aligned, they are removed from the field and 0 points are awarded. If the line is longer however points are awarded.
+TLDR: The game is played on a 7x7 board. The goal of the game is to align 4 pieces vertically, horizontally or diagonally. The players push in their pieces from the side, shifting the whole column or line in the process.
 
 ### Usage
 
-I used this library to implement my AlphaZero AI to play Shiftago: [github.com/obrhubr/alpha-shiftago](https://www.github.com/obrhubr/alpha-shiftago)
+Run `main.py` to play against a basic minimax algorithm.
 
 ### The implementation
 
-The library provides a `SimpleShiftagoGame` and `ExtremeShiftagoGame` object. They implement the corresponding gamemodes. They provides the `move` method. You need to provide a number, corresponding to the spot on which to insert the piece.
+The library provides a `Shiftago` object, which implements the game. Players have to implement the move method, which is called to get their move and passed to the game object, which updates state.
+
+The following moves are possible. Each number corresponds to the direction from which you push in your marble.
 
 ```
        0  1  2  3  4  5  6
@@ -33,4 +35,4 @@ The library provides a `SimpleShiftagoGame` and `ExtremeShiftagoGame` object. Th
 
 ```
 
-It then automatically handles the checking for the win condition and updates the `winner` and `gameEnd` attributes.
+The game checks for win conditions and updates the `winner` and `gameEnd` attributes.
