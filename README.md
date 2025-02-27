@@ -8,7 +8,7 @@ This project provides a high level API for the game "Shiftago" written in Python
 
 The rules are availiable under [https://de.wikipedia.org/wiki/Shiftago](https://de.wikipedia.org/wiki/Shiftago). 
 
-TLDR: The game is played on a 7x7 board. The goal of the game is to align 4 pieces vertically, horizontally or diagonally. The players push in their pieces from the side, shifting the whole column or line in the process.
+TLDR: The game is played on a 7x7 board. The goal of the game is to align 4/5 pieces vertically, horizontally or diagonally. The players push in their pieces from the side, shifting the whole column or line in the process.
 
 ### Usage
 
