@@ -37,7 +37,7 @@ class Shiftago():
         # From the top
         if side == 0:
             if self.check_insertion(self.board[:, number]):
-                raise Exception("Cannot insert into filled column.")
+                raise Exception(f"Cannot insert into filled column {move}.")
             else:
                 self.shift_col(number, direction=1)
                 # Insert marble at edge
@@ -45,7 +45,7 @@ class Shiftago():
         # From the right side
         elif side == 1:
             if self.check_insertion(self.board[number, :]):
-                raise Exception("Cannot insert into filled row.")
+                raise Exception(f"Cannot insert into filled row {move}.")
             else:
                 self.shift_row(number, direction=-1)
                 # Insert marble at edge
@@ -53,7 +53,7 @@ class Shiftago():
         # From the bottom
         elif side == 2:
             if self.check_insertion(self.board[:, number]):
-                raise Exception("Cannot insert into filled column.")
+                raise Exception(f"Cannot insert into filled column {move}.")
             else:
                 self.shift_col(self.size - 1 - number, direction=-1)
                 # Insert marble at edge
@@ -61,7 +61,7 @@ class Shiftago():
         # From the left side
         elif side == 3:
             if self.check_insertion(self.board[number, :]):
-                raise Exception("Cannot insert into filled row.")
+                raise Exception(f"Cannot insert into filled row {move}.")
             else:
                 self.shift_row(self.size - 1 - number, direction=1)
                 # Insert marble at edge
@@ -95,7 +95,6 @@ class Shiftago():
         
         if direction == -1:
             for idx in reversed(range(0, self.size)):
-                print(idx, self.board[row_n, idx])
                 if self.board[row_n, idx] == 0:
                     empty_idx = idx
                     break
@@ -103,7 +102,6 @@ class Shiftago():
                     collected += [self.board[row_n, idx]]
 
             # Add the collected marbles in, shifted one to the right
-            print(collected, empty_idx)
             self.board[row_n] = np.concatenate((
                 self.board[row_n, :empty_idx],
                 list(reversed(collected)),
@@ -177,3 +175,14 @@ class Shiftago():
                     count = 0
 
         return 0
+    
+    def board_to_string(self):
+        def player_to_string(num):
+            if num == 1:
+                return "🟥"
+            elif num == 2:
+                return "🟦"
+            return "⬛"
+        
+        output = "\n".join(["".join(map(player_to_string, line)) for line in self.board])
+        return f"Player {player_to_string(self.turn)}'s turn: \n{output}\n"
