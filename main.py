@@ -27,4 +27,4 @@ if __name__ == "__main__":
 	human = Human()
 	minimax = Minimax(depth=2)
 
-	play(game, human, minimax)
+	play(game, minimax, minimax)

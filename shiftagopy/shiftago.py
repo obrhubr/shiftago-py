@@ -1,44 +1,24 @@
 import numpy as np
 
 class Shiftago():
-    def __init__(self):
-        self.board = np.zeros((7,7))
-        self.game_end = False
-        self.turn = 1
-        self.winner = 0
+    def __init__(self, winning_length = 5, size = 7):
+        self.size = size
+        self.board = np.zeros((size, size), dtype=np.int8)
+        self.winning_length = winning_length
 
-    def move(self, num):
+        self.turn = 1
+        self.winner = None
+        self.game_end = False
+
+    def move(self, move):
         if self.game_end == True:
             return
         
         # Invalid move
-        if num < 0 and num > 27:
+        if move < 0 and move > (self.size * self.size - 1):
             return False
         
-        if num//7 == 0:
-            if self.checkCol(num%7) == False:
-                return False
-            else:
-                self.shiftColRight(num%7)
-                self.board[0,num%7] = self.turn
-        elif num//7 == 1:
-            if self.checkRow(num%7) == False:
-                return False
-            else:
-                self.shiftRowLeft(6-num%7)
-                self.board[num%7,6] = self.turn
-        elif num//7 == 2:
-            if self.checkCol(6-num%7) == False:
-                return False
-            else:
-                self.shiftColLeft(num%7)
-                self.board[6,6-num%7] = self.turn
-        elif num//7 == 3:
-            if self.checkRow(6-num%7) == False:
-                return False
-            else:
-                self.shiftRowRight(6-num%7)
-                self.board[6-num%7,0] = self.turn
+        self.mutate_board(move)
 
         # Switch turns
         self.turn = 1 if self.turn == 2 else 2
@@ -50,211 +30,150 @@ class Shiftago():
             self.game_end = True
         
         return True
+    
+    def mutate_board(self, move):
+        side, number = move // self.size, move % self.size
 
-    def check_end(self):
-        adjacent1 = 0
-        adjacent2 = 0
-        adjacent11 = 0
-        adjacent22 = 0
+        # From the top
+        if side == 0:
+            if self.check_insertion(self.board[:, number]):
+                raise Exception("Cannot insert into filled column.")
+            else:
+                self.shift_col(number, direction=1)
+                # Insert marble at edge
+                self.board[0, number] = self.turn
+        # From the right side
+        elif side == 1:
+            if self.check_insertion(self.board[number, :]):
+                raise Exception("Cannot insert into filled row.")
+            else:
+                self.shift_row(number, direction=-1)
+                # Insert marble at edge
+                self.board[number, self.size - 1] = self.turn
+        # From the bottom
+        elif side == 2:
+            if self.check_insertion(self.board[:, number]):
+                raise Exception("Cannot insert into filled column.")
+            else:
+                self.shift_col(self.size - 1 - number, direction=-1)
+                # Insert marble at edge
+                self.board[self.size - 1, self.size - 1 - number] = self.turn
+        # From the left side
+        elif side == 3:
+            if self.check_insertion(self.board[number, :]):
+                raise Exception("Cannot insert into filled row.")
+            else:
+                self.shift_row(self.size - 1 - number, direction=1)
+                # Insert marble at edge
+                self.board[self.size - 1 - number, 0] = self.turn
 
-        #Check Columns
-        for i in range(7):
-            for j in range(7):
-                if self.board[i,j] == 1:
-                    adjacent1 += 1
-                    adjacent2 = 0
-                if self.board[i,j] == 2:
-                    adjacent2 += 1
-                    adjacent1 = 0
-                if self.board[i,j] == 0:
-                    adjacent1 = 0
-                    adjacent2 = 0
-                if adjacent1 == 4:
-                    return 1
-                if adjacent2 == 4:
-                    return 2
-
-                #Check rows
-                if self.board[j,i] == 1:
-                    adjacent11 += 1
-                    adjacent22 = 0
-                if self.board[j,i] == 2:
-                    adjacent22 += 1
-                    adjacent11 = 0
-                if self.board[j,i] == 0:
-                    adjacent11 = 0
-                    adjacent22 = 0
-                if adjacent11 == 4:
-                    return 1
-                if adjacent22 == 4:
-                    return 2
-
-
-            adjacent11 = 0
-            adjacent22 = 0
-            adjacent1 = 0
-            adjacent2 = 0
-        
-        #Check top-left to bottom-right diagonal
-        res = self.checkDiagonal()
-        if res != 0:
-            return res
-        
-        #Check top-right to bottom-left diagonal
-        self.rotate(1)
-        res = self.checkDiagonal()
-        self.rotate(3)
-        if res != 0:
-            return res
-        
-        #Return 0 because no one won
-        return 0
-
-    def board_to_string(self):
-        def player_to_string(num):
-            if num == 1:
-                return "🟥"
-            elif num == 2:
-                return "🟦"
-            return "⬛"
-        
-        output = "\n".join(["".join(map(player_to_string, line)) for line in self.board])
-        return f"Player {player_to_string(self.turn)}'s turn: \n{output}\n"
-
-    #Utility functions
-    def checkCol(self, num):
-        placed = 0
-        for i in range(7):
-            if self.board[i, num] != 0:
-                placed += 1
-            if self.board[i, num] == 0:
-                return True
-        if placed == 7:
-            return False
-        else:
-            return True
-
-    def checkRow(self, num):
-        placed = 0
-        for i in range(7):
-            if self.board[num, i] != 0:
-                placed += 1
-            if self.board[num, i] == 0:
-                return True
-        if placed == 7:
-            return False
-        else:
-            return True
-
-    def shiftRowRight(self, num):
-        temp = []
-        for i in range(7):
-            if self.board[num, i] == 0 and i == 0:
-                return
-            elif self.board[num, i] == 1 or self.board[num, i] == 2:
-                temp.append(self.board[num, i])
-                self.board[num, i] = 0
-            elif self.board[num, i] == 0 and i != 0:
-                temp.reverse()
-                for j in range(len(temp)):
-                    self.board[num, i-j] = temp[j]
-                return
-        return
-
-    def shiftColRight(self, num):
-        temp = []
-        for i in range(7):
-            if self.board[i, num] == 0 and i == 0:
-                return
-            elif self.board[i, num] == 1 or self.board[i, num] == 2:
-                temp.append(self.board[i, num])
-                self.board[i, num] = 0
-            elif self.board[i, num] == 0 and i != 0:
-                temp.reverse()
-                for j in range(len(temp)):
-                    self.board[i-j, num] = temp[j]
-                return
-        return
-
-    def shiftRowLeft(self, num):
-        self.rotate(2)
-        temp = []
-        for i in range(7):
-            if self.board[num, i] == 0 and i == 0:
-                self.rotate(2)
-                return
-            elif self.board[num, i] == 1 or self.board[num, i] == 2:
-                temp.append(self.board[num, i])
-                self.board[num, i] = 0
-            elif self.board[num, i] == 0 and i != 0:
-                temp.reverse()
-                for j in range(len(temp)):
-                    self.board[num, i-j] = temp[j]
-                self.rotate(2)
-                return
-        self.rotate(2)
-        return
-
-    def shiftColLeft(self, num):
-        temp = []
-        self.rotate(2)
-        for i in range(7):
-            if self.board[i, num] == 0 and i == 0:
-                self.rotate(2)
-                return
-            elif self.board[i, num] == 1 or self.board[i, num] == 2:
-                temp.append(self.board[i, num])
-                self.board[i, num] = 0
-            elif self.board[i, num] == 0 and i != 0:
-                temp.reverse()
-                for j in range(len(temp)):
-                    self.board[i-j, num] = temp[j]
-                self.rotate(2)
-                return
-        self.rotate(2)
         return
     
-    def rotate(self, num):
-        self.board = np.rot90(self.board, num)
+    # Check if row still has space to insert marble
+    def check_insertion(self, row):
+        return sum(row == 0) == 0
+    
+    def shift_row(self, row_n, direction):
+        # No check for fullness of row necessary
+        collected = []
+        empty_idx = -1
+
+        if direction == 1:
+            for idx in range(0, self.size):
+                if self.board[row_n, idx] == 0:
+                    empty_idx = idx + 1
+                    break
+                else:
+                    collected += [self.board[row_n, idx]]
+
+            # Add the collected marbles in, shifted one to the right
+            self.board[row_n] = np.concatenate((
+                [0], 
+                collected,
+                self.board[row_n, empty_idx:]
+            ))
+        
+        if direction == -1:
+            for idx in reversed(range(0, self.size)):
+                print(idx, self.board[row_n, idx])
+                if self.board[row_n, idx] == 0:
+                    empty_idx = idx
+                    break
+                else:
+                    collected += [self.board[row_n, idx]]
+
+            # Add the collected marbles in, shifted one to the right
+            print(collected, empty_idx)
+            self.board[row_n] = np.concatenate((
+                self.board[row_n, :empty_idx],
+                list(reversed(collected)),
+                [0]
+            ))
+        
         return
+    
+    def shift_col(self, col, direction):
+        # Rotate board then shift rows
+        self.board = np.rot90(self.board)
+        self.shift_row(self.size - 1 - col, direction)
+        self.board = np.rot90(self.board , 3)
+        return
+    
+    def check_end(self):
+        for i in range(self.size):
+            # vertical
+            v = self.check_direction(0, i, 1, 0)
+            if v != 0:
+                return v
+            
+            # horizontal
+            h = self.check_direction(i, 0, 0, 1)
+            if h != 0:
+                return h
 
-    def checkDiagonal(self):
-        adjacent1 = 0
-        adjacent2 = 0
-        adjacent11 = 0
-        adjacent22 = 0
-        for i in range(4):
-            for j in range(7-i):
-                if self.board[i+j, j] == 1:
-                    adjacent1 += 1
-                    adjacent2 = 0
-                if self.board[i+j, j] == 2:
-                    adjacent2 += 1
-                    adjacent1 = 0
-                if self.board[i+j, j] == 0:
-                    adjacent1 = 0
-                    adjacent2 = 0
-                if adjacent1 == 4:
-                    return 1
-                if adjacent2 == 4:
-                    return 2
+        diagonals_top = [(0, c) for c in range(self.size - self.winning_length + 2)]
+        
+        for r, c in diagonals_top:
+            # diagonal \
+            d = self.check_direction(r, c, 1, 1)
+            if d != 0:
+                return d
+            # diagonals /
+            d = self.check_direction(r, self.size - 1 - c, 1, -1)
+            if d != 0:
+                return d
+        
+        # Exclude top left square
+        diagonals_left = [(r + 1, 0) for r in range(self.size - self.winning_length + 1)]
+        for r, c in diagonals_left:
+            # diagonal \
+            d = self.check_direction(r, c, 1, 1)
+            if d != 0:
+                return d
+            # diagonals /
+            d = self.check_direction(r, self.size - 1 - c, 1, -1)
+            if d != 0:
+                return d
+            
+        return 0
 
-                if self.board[j, j+i] == 1:
-                    adjacent11 += 1
-                    adjacent22 = 0
-                if self.board[j, j+i] == 2:
-                    adjacent22 += 1
-                    adjacent11 = 0
-                if self.board[j, j+i] == 0:
-                    adjacent11 = 0
-                    adjacent22 = 0
-                if adjacent11 == 4:
-                    return 1
-                if adjacent22 == 4:
-                    return 2
+    def check_direction(self, row, col, rd, cd):
+        count = 0
+        player = 1
+        other_player = 2
 
-            adjacent11 = 0
-            adjacent22 = 0
-            adjacent1 = 0
-            adjacent2 = 0
+        for i in range(0, self.size):
+            r = row + i * rd
+            c = col + i * cd
+            if r >= 0 and c >= 0 and r < self.size and c < self.size:
+                if self.board[r, c] == player:
+                    count += 1
+                    if count >= self.winning_length:
+                        return player
+                elif self.board[r, c] == other_player:
+                    count = 1
+                    player, other_player = other_player, player
+                else:
+                    count = 0
+
         return 0
