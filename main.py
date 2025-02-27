@@ -22,9 +22,9 @@ def play(game, player1, player2):
 	return
 
 if __name__ == "__main__":
-	game = Shiftago()
+	game = Shiftago(winning_length=5)
 
 	human = Human()
-	minimax = Minimax(depth=2)
+	minimax = Minimax(game, depth=2)
 
 	play(game, minimax, minimax)

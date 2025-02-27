@@ -1,11 +1,16 @@
 import copy
 import numpy as np
+from tqdm import tqdm
 
 class Minimax():
-	def __init__(self, depth = 3):
+	def __init__(self, game, depth = 3):
 		self.depth = depth
 		self.max = 9999
-		self.winning_length = 4
+
+		self.winning_length = game.winning_length
+		self.size = game.size
+
+		self.pbar = None
 		return
 
 	def minimax(self, game, depth):
@@ -15,7 +20,8 @@ class Minimax():
 		best_move = 0
 		best_move_value = -self.max
 
-		for move in range(28):
+		for move in range(game.size * 4):
+			self.pbar.update(1)
 			new_game = copy.deepcopy(game)
 
 			# If the move was illegal, skip it
@@ -48,10 +54,10 @@ class Minimax():
 			return [x for xs in counts for x in xs]
 		
 		def score_consecutive(consecutive_balls):
-			if consecutive_balls > 4:
-				raise Exception("More than 4 balls in a row.")
+			if consecutive_balls > self.winning_length:
+				raise Exception(f"More than {self.winning_length} marbles in a row.")
 			
-			scores = {0: 0, 1: 0, 2: 1, 3: 5, 4: 9999} # 3 is worth a lot more than 2
+			scores = {i: i**i if i > 1 else 0 for i in range(self.winning_length)}
 			return scores[consecutive_balls]
 		
 		def get_diagonals(array):
@@ -59,7 +65,7 @@ class Minimax():
 			rows, cols = array.shape
 
 			# Get diagonals from the top-left to the bottom-right
-			for k in range(-rows + 4, cols - (4 - 1)):
+			for k in range(-rows + self.winning_length, cols - (self.winning_length - 1)):
 				diagonals.append(np.diagonal(array, offset=k))
 
 			return diagonals
@@ -88,6 +94,11 @@ class Minimax():
 		return (player_scores[1] - player_scores[2]) * (1 if game.turn == 1 else -1)
 
 	def move(self, game):
-		_, move = self.minimax(game, self.depth)
-		print(f"Minimax choosing move {move}.")
+		# Add progress bar (approximate)
+		total_moves = (self.size*4 + 1)*(self.size*4)**(self.depth - 1)
+		with tqdm(total=total_moves) as pbar:
+			self.pbar = pbar
+			_, move = self.minimax(game, self.depth)
+
+		print(f"Minimax chose move {move}.")
 		return move

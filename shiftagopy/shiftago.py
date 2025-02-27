@@ -18,7 +18,13 @@ class Shiftago():
         if move < 0 and move > (self.size * self.size - 1):
             return False
         
-        self.mutate_board(move)
+        if (self.board != 0).all():
+            raise Exception("Board is full.")
+        
+        try:
+            self.mutate_board(move)
+        except:
+            return False
 
         # Switch turns
         self.turn = 1 if self.turn == 2 else 2
