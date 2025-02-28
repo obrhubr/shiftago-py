@@ -25,6 +25,6 @@ if __name__ == "__main__":
 	game = Shiftago(winning_length=5)
 
 	human = Human()
-	minimax = Minimax(game, depth=2)
+	minimax = Minimax(game, depth=4)
 
-	play(game, minimax, minimax)
+	play(game, human, minimax)

@@ -13,15 +13,23 @@ class Minimax():
 		self.pbar = None
 		return
 
-	def minimax(self, game, depth):
+	def minimax(self, game, depth, full=False):
 		if depth == 0 or game.game_end:
 			return self.evaluate(game), 0
 		
-		best_move = 0
+		best_move = None
 		best_move_value = -self.max
 
-		for move in range(game.size * 4):
-			self.pbar.update(1)
+		# If no full check was requested
+		if not full:
+			# Choose relevant moves based on simple heuristic
+			# This drastically reduces search time for minimax
+			moves = self.get_relevant_moves(game)
+		else:
+			moves = range(self.size * 4)
+			
+		for move in moves:
+			#self.pbar.update(1)
 			new_game = copy.deepcopy(game)
 
 			# If the move was illegal, skip it
@@ -39,7 +47,52 @@ class Minimax():
 				best_move_value = move_value
 				best_move = move
 		
-		return best_move_value, best_move
+		if best_move is not None:
+			return best_move_value, best_move
+		else:
+			# If there was no legal move, run full search
+			return self.minimax(game, depth, full=True)
+	
+	# Choose relevant moves based on simple heuristic
+	# If there is a marble at any point around the insertion point, the move is deemed relevant.
+	def get_relevant_moves(self, game):
+		relevant_moves = []
+
+		mv = 0
+		for side in range(4):
+			for i in range(self.size):
+				if side == 0:
+					r, c = 0, i
+				elif side == 1:
+					r, c = i, self.size - 1
+				elif side == 2:
+					r, c = self.size - 1, i
+				elif side == 3:
+					r, c = i, 0
+
+				if self.check_around(game, r, c):
+					relevant_moves += [mv]
+
+				mv += 1
+
+		if len(relevant_moves) == 0:
+			# If the bot starts, play move 0
+			return [0]
+		return list(set(relevant_moves))
+	
+	# Check if squares around the insertion point are empty
+	def check_around(self, game, r, c):
+		if game.board[r, c] != 0:
+			return True
+		if r - 1 >= 0 and game.board[r - 1, c] != 0:
+			return True
+		if r + 1 < game.size and game.board[r + 1, c] != 0:
+			return True
+		if c - 1 >= 0 and game.board[r, c - 1] != 0:
+			return True
+		if c + 1 < game.size and game.board[r, c + 1] != 0:
+			return True
+		return False
 
 	# Return evaluation, > 0 if player 1 is winning, otherwise < 0
 	def evaluate(self, game):
@@ -72,7 +125,7 @@ class Minimax():
 		
 		# early exit on game end
 		if game.game_end:
-			return self.max * (1 if game.winner == 1 else -1) * (1 if game.turn == 1 else -1)
+			return (self.max - 10) * (1 if game.winner == 1 else -1) * (1 if game.turn == 1 else -1)
 
 		players = [1, 2]
 		player_scores = {player: 0 for player in players}
@@ -95,10 +148,10 @@ class Minimax():
 
 	def move(self, game):
 		# Add progress bar (approximate)
-		total_moves = (self.size*4 + 1)*(self.size*4)**(self.depth - 1)
-		with tqdm(total=total_moves) as pbar:
-			self.pbar = pbar
-			_, move = self.minimax(game, self.depth)
+		#total_moves = (self.size*4 + 1)*(self.size*4)**(self.depth - 1)
+		#with tqdm(total=total_moves) as pbar:
+		#self.pbar = pbar
+		_, move = self.minimax(game, self.depth)
 
 		print(f"Minimax chose move {move}.")
 		return move
