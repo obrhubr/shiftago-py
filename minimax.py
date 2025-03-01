@@ -1,6 +1,5 @@
 import copy
 import numpy as np
-from tqdm import tqdm
 
 class Minimax():
 	def __init__(self, game, depth = 3):
@@ -9,8 +8,6 @@ class Minimax():
 
 		self.winning_length = game.winning_length
 		self.size = game.size
-
-		self.pbar = None
 		return
 
 	def minimax(self, game, depth, full=False):
@@ -29,7 +26,6 @@ class Minimax():
 			moves = range(self.size * 4)
 			
 		for move in moves:
-			#self.pbar.update(1)
 			new_game = copy.deepcopy(game)
 
 			# If the move was illegal, skip it
@@ -147,10 +143,6 @@ class Minimax():
 		return (player_scores[1] - player_scores[2]) * (1 if game.turn == 1 else -1)
 
 	def move(self, game):
-		# Add progress bar (approximate)
-		#total_moves = (self.size*4 + 1)*(self.size*4)**(self.depth - 1)
-		#with tqdm(total=total_moves) as pbar:
-		#self.pbar = pbar
 		value, move = self.minimax(game, self.depth)
 
 		print(f"Minimax chose move {move} (eval: {value}).")
