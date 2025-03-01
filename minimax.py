@@ -151,7 +151,7 @@ class Minimax():
 		#total_moves = (self.size*4 + 1)*(self.size*4)**(self.depth - 1)
 		#with tqdm(total=total_moves) as pbar:
 		#self.pbar = pbar
-		_, move = self.minimax(game, self.depth)
+		value, move = self.minimax(game, self.depth)
 
-		print(f"Minimax chose move {move}.")
+		print(f"Minimax chose move {move} - {value}.")
 		return move

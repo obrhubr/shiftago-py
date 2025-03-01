@@ -15,7 +15,7 @@ class Shiftago():
             return
         
         # Invalid move
-        if move < 0 and move > (self.size * self.size - 1):
+        if move < 0 or move > (self.size * 4):
             return False
         
         if (self.board != 0).all():
