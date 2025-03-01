@@ -6,6 +6,7 @@ class Shiftago():
         self.board = np.zeros((size, size), dtype=np.int8)
         self.winning_length = winning_length
 
+        self.turn_number = 0
         self.turn = 1
         self.winner = None
         self.game_end = False
@@ -29,6 +30,7 @@ class Shiftago():
 
         # Switch turns
         self.turn = 1 if self.turn == 2 else 2
+        self.turn_number += 1
 
         # Check for end states
         result = self.check_end()
@@ -183,13 +185,38 @@ class Shiftago():
 
         return 0
     
-    def board_to_string(self):
-        def player_to_string(num):
+    def convert_move(self, move):
+        # Convert move to row, column
+        side, number = move // self.size, move % self.size
+
+        if side == 0:
+            return (0, number)
+        elif side == 1:
+            return (number, self.size - 1)
+        elif side == 2:
+            return (self.size - 1, self.size - 1 - number)
+        elif side == 3:
+            return (self.size - 1 - number, 0)
+
+        raise Exception("Invalid move: {move}")
+    
+    def board_to_string(self, highlight_move=None):
+        if highlight_move is not None:
+            highlight_move = self.convert_move(highlight_move)
+
+        def player_to_string(num, r=-1, c=-1):
             if num == 1:
-                return "🟥"
+                if highlight_move == (r, c):
+                    return "🔴"
+                else:
+                    return "🟥"
             elif num == 2:
-                return "🟦"
+                if highlight_move == (r, c):
+                    return "🔵"
+                else:
+                    return "🟦"
             return "⬛"
         
-        output = "\n".join(["".join(map(player_to_string, line)) for line in self.board])
-        return f"Player {player_to_string(self.turn)}'s turn: \n{output}\n"
+        rows = ["".join(map(player_to_string, line, [r] * self.size, range(self.size))) for line, r in zip(self.board, range(self.size))]
+        board = "\n".join(rows)
+        return f"Player {player_to_string(self.turn)}'s turn: \n{board}\n"

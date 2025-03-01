@@ -153,5 +153,5 @@ class Minimax():
 		#self.pbar = pbar
 		value, move = self.minimax(game, self.depth)
 
-		print(f"Minimax chose move {move} - {value}.")
+		print(f"Minimax chose move {move} (eval: {value}).")
 		return move
