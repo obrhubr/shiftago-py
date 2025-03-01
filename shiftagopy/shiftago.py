@@ -23,7 +23,8 @@ class Shiftago():
         
         try:
             self.mutate_board(move)
-        except:
+        except Exception as e:
+            #print(f"Error processing move: {e}")
             return False
 
         # Switch turns
@@ -58,7 +59,7 @@ class Shiftago():
                 self.board[number, self.size - 1] = self.turn
         # From the bottom
         elif side == 2:
-            if self.check_insertion(self.board[:, number]):
+            if self.check_insertion(self.board[:, self.size - number - 1]):
                 raise Exception(f"Cannot insert into filled column {move}.")
             else:
                 self.shift_col(self.size - 1 - number, direction=-1)
@@ -66,7 +67,7 @@ class Shiftago():
                 self.board[self.size - 1, self.size - 1 - number] = self.turn
         # From the left side
         elif side == 3:
-            if self.check_insertion(self.board[number, :]):
+            if self.check_insertion(self.board[self.size - number - 1, :]):
                 raise Exception(f"Cannot insert into filled row {move}.")
             else:
                 self.shift_row(self.size - 1 - number, direction=1)
