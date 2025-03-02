@@ -106,7 +106,9 @@ class Minimax():
 			if consecutive_balls > self.winning_length:
 				raise Exception(f"More than {self.winning_length} marbles in a row.")
 			
-			scores = {i: i**i if i > 1 else 0 for i in range(self.winning_length)}
+			# Square increase in value for length of marble chain
+			# 0:0, 1:0, 2:4, 3:9, 5:25
+			scores = {i: i**2 if i > 1 else 0 for i in range(self.winning_length)}
 			return scores[consecutive_balls]
 		
 		def get_diagonals(array):
@@ -144,6 +146,5 @@ class Minimax():
 
 	def move(self, game):
 		value, move = self.minimax(game, self.depth)
-
-		print(f"Minimax chose move {move} (eval: {value}).")
-		return move
+		#print(f"Minimax chose move {move} (eval: {value}).")
+		return move, value
