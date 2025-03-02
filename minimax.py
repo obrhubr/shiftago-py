@@ -6,9 +6,53 @@ class Minimax():
 		self.depth = depth
 		self.max = 9999
 
-		self.winning_length = game.winning_length
-		self.size = game.size
+		self.scoring_rules = {c: c**2 if c > 1 else 0 for c in range(game.winning_length)}
+
+		self.diagonals_rl, self.diagonals_lr = self.generate_diagonals(game.size, game.winning_length)
 		return
+	
+	def generate_diagonals(self, size, winning_length):
+		diagonals_rl, diagonals_lr = [], []
+
+		for col in range(size-1, -1, -1):
+			x, y = 0, col
+			diagonal = []
+			while x < size and y < size:
+				diagonal.append((x, y))
+				x += 1
+				y += 1
+			if len(diagonal) >= winning_length:
+				diagonals_rl += [diagonal]
+		for row in range(1, size):
+			x, y = row, 0
+			diagonal = []
+			while x < size and y < size:
+				diagonal.append((x, y))
+				x += 1
+				y += 1
+			if len(diagonal) >= winning_length:
+				diagonals_rl += [diagonal]
+
+		for col in range(size):
+			x, y = 0, col
+			diagonal = []
+			while x < size and y >= 0:
+				diagonal.append((x, y))
+				x += 1
+				y -= 1
+			if len(diagonal) >= winning_length:
+				diagonals_lr += [diagonal]
+		for row in range(1, size):
+			x, y = row, size - 1
+			diagonal = []
+			while x < size and y >= 0:
+				diagonal.append((x, y))
+				x += 1
+				y -= 1
+			if len(diagonal) >= winning_length:
+				diagonals_lr += [diagonal]
+
+		return diagonals_rl, diagonals_lr
 
 	def minimax(self, game, depth, full=False):
 		if depth == 0 or game.game_end:
@@ -23,7 +67,7 @@ class Minimax():
 			# This drastically reduces search time for minimax
 			moves = self.get_relevant_moves(game)
 		else:
-			moves = range(self.size * 4)
+			moves = range(game.size * 4)
 			
 		for move in moves:
 			new_game = copy.deepcopy(game)
@@ -56,13 +100,13 @@ class Minimax():
 
 		mv = 0
 		for side in range(4):
-			for i in range(self.size):
+			for i in range(game.size):
 				if side == 0:
 					r, c = 0, i
 				elif side == 1:
-					r, c = i, self.size - 1
+					r, c = i, game.size - 1
 				elif side == 2:
-					r, c = self.size - 1, i
+					r, c = game.size - 1, i
 				elif side == 3:
 					r, c = i, 0
 
@@ -92,53 +136,71 @@ class Minimax():
 
 	# Return evaluation, > 0 if player 1 is winning, otherwise < 0
 	def evaluate(self, game):
-		def count_consecutive_row(arr):
-			changes = np.diff(arr.astype(int), prepend=0, append=0)
-			counts = np.where(changes == -1)[0] - np.where(changes == 1)[0]
-			return list(counts) if len(counts) > 0 else [0]
-		
-		# Count consecutive balls on board in straight lines
-		def count_consecutive(arr):
-			counts = [count_consecutive_row(row_or_col) for row_or_col in arr]
-			return [x for xs in counts for x in xs]
-		
-		def score_consecutive(consecutive_balls):
-			if consecutive_balls > self.winning_length:
-				raise Exception(f"More than {self.winning_length} marbles in a row.")
-			
-			scores = {i: i**i if i > 1 else 0 for i in range(self.winning_length)}
-			return scores[consecutive_balls]
-		
-		def get_diagonals(array):
-			diagonals = []
-			rows, cols = array.shape
-
-			# Get diagonals from the top-left to the bottom-right
-			for k in range(-rows + self.winning_length, cols - (self.winning_length - 1)):
-				diagonals.append(np.diagonal(array, offset=k))
-
-			return diagonals
-		
 		# early exit on game end
 		if game.game_end:
 			return (self.max - 10) * (1 if game.winner == 1 else -1) * (1 if game.turn == 1 else -1)
 
 		players = [1, 2]
-		player_scores = {player: 0 for player in players}
+		player_scores = {p: 0 for p in players}
 
-		for player in players:
-			rows = count_consecutive(np.moveaxis(game.board, 0, 0) == player)
-			cols = count_consecutive(np.moveaxis(game.board, 1, 0) == player)
+		# Count helpers
+		directions = ["r", "c"]
+		previous = {d: 0 for d in directions}
+		consecutives = {d: 0 for d in directions}
 
-			diag_r = count_consecutive([d == player for d in get_diagonals(game.board)])
-			diag_l = count_consecutive([d == player for d in get_diagonals(np.fliplr(game.board))])
+		for idx in range(game.size * game.size):
+			r = game.board[idx // game.size, idx % game.size]
+			c = game.board[idx % game.size, idx // game.size]
 
-			player_scores[player] += (
-				sum(map(score_consecutive, rows)) +
-				sum(map(score_consecutive, cols)) +
-				sum(map(score_consecutive, diag_r)) +
-				sum(map(score_consecutive, diag_l))
-			)
+			for current, d in zip([r, c], directions):
+				# On col/row change
+				if idx % 7 == 0:
+					if previous[d] != 0:
+						player_scores[previous[d]] += self.scoring_rules[consecutives[d]]
+
+					# Reset
+					consecutives[d] = 1
+					previous[d] = current
+					continue
+				
+				if current == previous[d]:
+					consecutives[d] += 1
+				else:
+					if previous[d] != 0:
+						# Add score to player
+						player_scores[previous[d]] += self.scoring_rules[consecutives[d]]
+					# Reset consecutive marble count
+					consecutives[d] = 1
+				# Set previous to current
+				previous[d] = current
+
+		directions = ["dr", "dc"]
+		previous = {d: 0 for d in directions}
+		consecutives = {d: 0 for d in directions}
+
+		for n in range(len(self.diagonals_lr)):
+			for idx in range(len(self.diagonals_lr[n])):
+				dr = game.board[self.diagonals_lr[n][idx]]
+				dc = game.board[self.diagonals_rl[n][idx]]
+
+				for current, d in zip([dr, dc], directions):					
+					if current == previous[d]:
+						consecutives[d] += 1
+					else:
+						if previous[d] != 0:
+							# Add score to player
+							player_scores[previous[d]] += self.scoring_rules[consecutives[d]]
+						# Reset consecutive marble count
+						consecutives[d] = 1
+					# Set previous to current
+					previous[d] = current
+
+			for d in directions:
+				if previous[d] != 0:
+					player_scores[previous[d]] += self.scoring_rules[consecutives[d]]
+			# Reset on diagonal change
+			previous = {d: 0 for d in directions}
+			consecutives = {d: 0 for d in directions}
 
 		return (player_scores[1] - player_scores[2]) * (1 if game.turn == 1 else -1)
 
