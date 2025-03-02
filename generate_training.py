@@ -29,6 +29,8 @@ def play(game, player1, player2):
 		if not game.move(move):
 			continue
 
+		print(f"Move: {move} - eval: {value}.")
+
 		positions += [pre_board]
 		valuations += [value]
 
@@ -86,18 +88,18 @@ if __name__ == "__main__":
 			positions += ps
 			valuations += vs
 
-	# Normalise
-	valuations = np.array(list(map(lambda v: normalise(v), valuations)))
-	# Augment
-	positions, valuations = augment_data(positions, valuations)
-	# Convert boards to nn input
-	positions = np.array(list(map(lambda p: convert_board_to_input(p), positions)))
+		# Normalise
+		valuations = np.array(list(map(lambda v: normalise(v), valuations)))
+		# Augment
+		positions, valuations = augment_data(positions, valuations)
+		# Convert boards to nn input
+		positions = np.array(list(map(lambda p: convert_board_to_input(p), positions)))
 
-	# Save move and evaluation
-	torch.save(
-		(
-			torch.tensor(positions).float(), 
-			torch.tensor(valuations.reshape((valuations.size, 1))).float()
-		),
-		"./data/positions.pt"
-	)
+		# Save move and evaluation
+		torch.save(
+			(
+				torch.tensor(positions).float(), 
+				torch.tensor(valuations.reshape((valuations.size, 1))).float()
+			),
+			"./data/positions.pt"
+		)
